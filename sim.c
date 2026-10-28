@@ -286,7 +286,7 @@ sim_report run(sim_state *sim, int cycle_limit) {
                             sim->image_state = 2;
                             break;
                         case 2:
-                            if (sim->image_x < 30) {
+                            if (sim->image_x < 30 && sim->image_xy < 540) {
                                 int i = sim->image_xy;
                                 uint8_t color = value >= 0 && value < 5 ? value : 0;
                                 sim->image_diff -= sim->output.image[i] != sim->test_case.image[i];
