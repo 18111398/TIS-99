@@ -10,19 +10,25 @@ You probably won't need this because [TIS-100-CXX](https://github.com/killerbee1
 ```
 OOOOO
 OO..
-O.O.
-OO..
-..OOO
+O.OO
+OO.O
+OOOOO
 ```
 
 ##### Bonus
 ```
-O.O..
-O..O.
 OOO..
-...OO
-.OOO.
+OO.O.
+OOO..
+O.OOO
+.OOOO
 ```
+
+##### Secret
+```
+O
+```
+
 ### Compile
 Example using gcc with optimizer flags:
 

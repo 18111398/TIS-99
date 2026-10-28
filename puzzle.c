@@ -188,6 +188,22 @@ int gen_sequence_reverser(uint32_t seed, test_case_buffer *test) {
     return 0;
 }
 
+int gen_signal_multiplier(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng_a = create_unity_rng(seed);
+    unity_rng rng_b = create_unity_rng(seed + 1);
+    for (int i = 0; i < 39; i++) {
+        int16_t a = unity_rng_next_between(&rng_a, 0, 10);
+        int16_t b = unity_rng_next_between(&rng_b, 0, 10);
+        test->inputs[0][i] = a;
+        test->inputs[1][i] = b;
+        test->outputs[0][i] = a * b;
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
 int gen_image_test_pattern_1(uint32_t seed, test_case_buffer *test) {
     memset(test->image, 3, 540);
     return 0;
@@ -199,6 +215,79 @@ int gen_image_test_pattern_2(uint32_t seed, test_case_buffer *test) {
             test->image[x + y * 30] = (x ^ y) % 2 == 0 ? 3 : 0;
         }
     }
+    return 0;
+}
+
+int gen_histogram_viewer(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng = create_unity_rng(seed);
+    test->inputs[0][0] = unity_rng_next_between(&rng, 3, 14);
+    for (int x = 1; x < 30; x++) {
+        if (unity_rng_next_between(&rng, 0, 4)) {
+            // MIN / MAX macros work incorrectly on things with side effects
+            test->inputs[0][x] = test->inputs[0][x - 1] + unity_rng_next_between(&rng, -2, 3);
+            test->inputs[0][x] = MIN(MAX(test->inputs[0][x], 1), 17);
+        } else {
+            test->inputs[0][x] = unity_rng_next_between(&rng, 3, 14);
+        }
+    }
+    // The first row is always empty.
+    for (int y = 1; y < 17; y++) {
+        for (int x = 0; x < 30; x++) {
+            test->image[x + y * 30] = 18 - y <= test->inputs[0][x] ? 3 : 0;
+        }
+    }
+    // The last row is always filled.
+    memset(test->image + 510, 3, 30);
+    test->input_sizes[0] = 30;
+    return 0;
+}
+
+int gen_signal_window_filter(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng = create_unity_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        test->inputs[0][i] = unity_rng_next_between(&rng, 10, 100);
+    }
+    // If I can pad pre-inputs with zero this would be much simpler. Sadly I can't.
+    int16_t sum3 = 0;
+    for (int i = 0; i < 3; i++) {
+        sum3 += test->inputs[0][i];
+        test->outputs[0][i] = sum3;
+        test->outputs[1][i] = sum3;
+    }
+    int16_t sum5 = sum3;
+    for (int i = 3; i < 5; i++) {
+        sum3 += test->inputs[0][i] - test->inputs[0][i - 3];
+        sum5 += test->inputs[0][i];
+        test->outputs[0][i] = sum3;
+        test->outputs[1][i] = sum5;
+    }
+    for (int i = 5; i < 39; i++) {
+        sum3 += test->inputs[0][i] - test->inputs[0][i - 3];
+        sum5 += test->inputs[0][i] - test->inputs[0][i - 5];
+        test->outputs[0][i] = sum3;
+        test->outputs[1][i] = sum5;
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = 39;
+    test->output_sizes[1] = 39;
+    return 0;
+}
+
+int gen_signal_divider(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng_a = create_unity_rng(seed);
+    unity_rng rng_b = create_unity_rng(seed + 1);
+    for (int i = 0; i < 39; i++) {
+        int16_t a = unity_rng_next_between(&rng_a, 10, 100);
+        int16_t b = unity_rng_next_between(&rng_b, 1, 10);
+        test->inputs[0][i] = a;
+        test->inputs[1][i] = b;
+        test->outputs[0][i] = a / b;
+        test->outputs[1][i] = a % b;
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
+    test->output_sizes[1] = 39;
     return 0;
 }
 
@@ -345,6 +434,18 @@ int gen_sequence_merger(uint32_t seed, test_case_buffer *test) {
     return 0;
 }
 
+int gen_integer_series_calculator(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        int16_t n = mono_rng_next_between(&rng, 1, 45);
+        test->inputs[0][i] = n;
+        test->outputs[0][i] = n * (n + 1) / 2;
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
 int gen_sequence_range_limiter(uint32_t seed, test_case_buffer *test) {
     mono_rng rng = create_mono_rng(seed);
     for (int i = 0; i < 6; i++) {
@@ -382,6 +483,19 @@ int gen_signal_prescaler(uint32_t seed, test_case_buffer *test) {
     test->output_sizes[0] = 39;
     test->output_sizes[1] = 39;
     test->output_sizes[2] = 39;
+    return 0;
+}
+
+int gen_signal_averager(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        test->inputs[0][i] = mono_rng_next_between(&rng, 100, 1000);
+        test->inputs[1][i] = mono_rng_next_between(&rng, 100, 1000);
+        test->outputs[0][i] = (test->inputs[0][i] + test->inputs[1][i]) / 2;
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
     return 0;
 }
 
@@ -446,6 +560,53 @@ int gen_image_test_pattern_4(uint32_t seed, test_case_buffer *test) {
             test->image[x + y * 30] = (x ^ y) % 4;
         }
     }
+    return 0;
+}
+
+int gen_backreference_reifier(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        int16_t back = 0;
+        if (mono_rng_next_between(&rng, 0, 2) == 0) {
+            back = mono_rng_next_between(&rng, -4, 0);
+            if (back < -i) {
+                back = 0;
+            }
+        }
+        test->inputs[0][i] = back;
+        test->inputs[1][i] = mono_rng_next_between(&rng, 10, 100);
+        test->outputs[0][i] = test->inputs[1][i + back];
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_sequence_gap_interpolator(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    static const char lens[] = {5, 4, 4, 4, 5, 4, 5, 4, 4};
+    int ii = 0;
+    for (int seq = 0; seq < 9; seq++) {
+        char len = lens[seq];
+        int16_t min = mono_rng_next_between(&rng, 10, 91);
+        int16_t gap_i = mono_rng_next_between(&rng, 1, len - 1);
+
+        for (int i = 0; i < len - 1; i++) {
+            test->inputs[0][ii + i] = min + i + (i >= gap_i);
+        }
+        for (int i = len - 2; i > 0; i--) {
+            int j = mono_rng_next_between(&rng, 0, i + 1);
+            int16_t temp = test->inputs[0][ii + i];
+            test->inputs[0][ii + i] = test->inputs[0][ii + j];
+            test->inputs[0][ii + j] = temp;
+        }
+        test->inputs[0][ii + len - 1] = 0;
+        test->outputs[0][seq] = min + gap_i;
+        ii += len;
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = 9;
     return 0;
 }
 
@@ -579,6 +740,73 @@ int gen_t31_node_emulator(uint32_t seed, test_case_buffer *test) {
     } while (ii <= 36);
     test->input_sizes[0] = ii;
     test->output_sizes[0] = oi;
+    return 0;
+}
+
+int gen_wave_collapse_supervisor(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    uint8_t sums[4] = {0};
+    uint8_t max_sum = 0;
+    for (int i = 0; i < 39; i++) {
+        for (int j = 0; j < 4; j++) {
+            uint16_t n = mono_rng_next_between(&rng, 0, 2);
+            if (i >= 1 && (test->outputs[0][i - 1] == j + 1)) {
+                n = mono_rng_next_between(&rng, -1, 1);
+            }
+            test->inputs[j][i] = n;
+            sums[j] += n;
+            if (sums[j] > max_sum) {
+                max_sum = sums[j];
+                test->outputs[0][i] = j + 1;
+            }
+        }
+        max_sum = 0;
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->input_sizes[2] = 39;
+    test->input_sizes[3] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_unknown(uint32_t seed, test_case_buffer *test) {
+    // The algorithm used in the game is drastically different,
+    // so there are a few weird-looking details that handles the artifacts of the original algorithm.
+    unity_rng rng = create_unity_rng(seed);
+    int offset = 0;
+    int seq_i = 0;
+    int16_t prev_val = 181;
+    while (offset < 38) {
+        int16_t val = unity_rng_next_between(&rng, 0, 4);
+        int len = unity_rng_next_between(&rng, 2, 5);
+        int16_t actual_len = MIN(len, 38 - offset);
+        for (int i = 0; i < actual_len; i++) {
+            test->outputs[0][offset + i] = val;
+        }
+        if (prev_val != val) {
+            test->outputs[1][seq_i] = actual_len;
+            test->outputs[1][seq_i + 1] = val;
+            seq_i += 2;
+        } else {
+            test->outputs[1][seq_i - 2] += actual_len;
+        }
+        prev_val = val;
+        offset += len;
+    }
+    test->outputs[0][38] = -1;
+    if (offset == 38) {
+        unity_rng_next(&rng);
+        unity_rng_next(&rng);
+    }
+
+    for (int i = 0; i < 39; i++) {
+        test->inputs[0][i] = test->outputs[0][i] * 25 + unity_rng_next_between(&rng, 6, 19);
+    }
+    test->inputs[0][38] = -1;
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = 39;
+    test->output_sizes[1] = seq_i;
     return 0;
 }
 
