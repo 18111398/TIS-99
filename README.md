@@ -39,5 +39,19 @@ You may try with any compiler and any flags you like.
 
 Puzzle will be **deducted from the file name**.
 
+### Temporary tools (can be changed or deleted at any time)
+
+Running a large number of tests:
+
+```gcc main_large.c puzzle.c parser.c sim.c -s -O2 -o TIS-99_large```
+
+Usage:
+
+```TIS-999_large [file path] [test count]```
+
+Runs the solution for three basic tests + ``test count`` random tests, starting from a random seed.
+
+Default ``test count`` value is 1000.
+
 ### TODOs
 - Write TODOs
