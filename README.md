@@ -47,7 +47,7 @@ Running a large number of tests:
 
 Usage:
 
-```TIS-999_large [file path] [test count]```
+```TIS-99_large [file path] [test count]```
 
 Runs the solution for three basic tests + ``test count`` random tests, starting from a random seed.
 
