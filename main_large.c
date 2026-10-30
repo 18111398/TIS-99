@@ -88,13 +88,20 @@ int main(int argc, char *argv[]) {
         }
     }
     int success = 0;
+    int skipped = 0;
     for (int test_i = 0; test_i < random_tests; test_i++) {
-        puzzle.gen(starting_seed + test_i, &sim.test_case);
+        if (puzzle.gen(starting_seed + test_i, &sim.test_case) != 0) {
+            skipped++;
+            continue;
+        }
         test_case_buffer test = sim.test_case;
         sim_report sim_report = run(&sim, 600000);
         if (sim_report.result == SIM_SUCCESS) {
             success++;
         }
     }
-    printf("%d/%d random tests passed", success, random_tests);
+    printf("%d/%d random tests passed", success, random_tests - skipped);
+    if (skipped) {
+        printf(" (%d skipped)", skipped);
+    }
 }
