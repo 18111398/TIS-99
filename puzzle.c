@@ -893,7 +893,7 @@ int gen_prime_factor_calculator(uint32_t seed, test_case_buffer *test) {
     // These represent the lengths of the whole prime factor sequence including the terminating zero.
     // Thus prime numbers have a length of 2.
     // This list is script-generated.
-    char lens[90] = {3, 2, 4, 2, 3, 3, 5, 2, 4, 2, 4, 3, 3, 2, 5, 3, 3, 4, 4, 2, 4, 2, 6, 3, 3, 3, 5, 2, 3, 3, 5, 2, 4, 2, 4, 4, 3, 2, 6, 3, 4, 3, 4, 2, 5, 3, 5, 3, 3, 2, 5, 2, 3, 4, 7, 3, 4, 2, 4, 3, 4, 2, 6, 2, 3, 4, 4, 3, 4, 2, 6, 5, 3, 2, 5, 3, 3, 3, 5, 2, 5, 3, 4, 3, 3, 3, 7, 2, 4, 4};
+    static const char lens[90] = {3, 2, 4, 2, 3, 3, 5, 2, 4, 2, 4, 3, 3, 2, 5, 3, 3, 4, 4, 2, 4, 2, 6, 3, 3, 3, 5, 2, 3, 3, 5, 2, 4, 2, 4, 4, 3, 2, 6, 3, 4, 3, 4, 2, 5, 3, 5, 3, 3, 2, 5, 2, 3, 4, 7, 3, 4, 2, 4, 3, 4, 2, 6, 2, 3, 4, 4, 3, 4, 2, 6, 5, 3, 2, 5, 3, 3, 3, 5, 2, 5, 3, 4, 3, 3, 3, 7, 2, 4, 4};
     int total;
     do {
         total = 38;
@@ -904,10 +904,10 @@ int gen_prime_factor_calculator(uint32_t seed, test_case_buffer *test) {
         }
     } while (total != 0);
 
-    const char small_primes[4] = {2, 3, 5, 7};
+    static const char small_primes[4] = {2, 3, 5, 7};
     int oi = 0;
     for (int i = 0; i < 10; i++) {
-        int n = test->inputs[0][i];
+        int16_t n = test->inputs[0][i];
         char len = lens[n - 10];
         char prime_i = 0;
         // I still compute the primes on the fly, but with the length known the termination detection is much simpler.
