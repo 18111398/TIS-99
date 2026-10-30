@@ -311,6 +311,11 @@ parse_report parse_solution(FILE *fp, puzzle *puzzle, sim_state *sim) {
                         goto parse_cleanup;
                     }
                     append_deferred_label(&deferred_label_parsings, label, t21->program_size);
+                    if (!slice_is_empty(next_token(&line))) {
+                        res.result = PARSE_TOO_MANY_ARGS;
+                        goto parse_cleanup;
+                    }
+                    break;
                 }
             }
             t21->program[t21->program_size] = ins;
