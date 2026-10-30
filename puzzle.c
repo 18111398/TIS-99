@@ -142,6 +142,53 @@ int gen_sequence_counter(uint32_t seed, test_case_buffer *test) {
     return 0;
 }
 
+int gen_signal_edge_detector(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng = create_unity_rng(seed);
+    test->inputs[0][0] = 0;
+    test->inputs[0][1] = unity_rng_next_between(&rng, 25, 75);
+    test->outputs[0][0] = 0;
+    test->outputs[0][1] = 1;
+    for (int i = 2; i < 39; i++) {
+        int16_t d;
+        switch(unity_rng_next_between(&rng, 0, 6)) {
+            case 1:
+                d = unity_rng_next_between(&rng, 0, 3) - 11;
+                break;
+            case 2:
+                d = unity_rng_next_between(&rng, 0, 3) + 9;
+                break;
+            default:
+                d = unity_rng_next_between(&rng, 0, 9) - 4;
+                break;
+        }
+        test->inputs[0][i] = test->inputs[0][i-1] + d;
+        test->outputs[0][i] = (d <= -10) || (d >= 10);
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_interrupt_handler(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng = create_unity_rng(seed);
+    // Zeroing the first elements is too tedious so I'm not zeroing. The buffer is already zeroed in the first place.
+    // If needed add zeroing back
+    char curr[6] = {0};
+    for (int i = 1; i < 39; i++) {
+        int n = unity_rng_next_between(&rng, 0, 6);
+        curr[n] ^= 1;
+        test->outputs[0][i] = n < 4 && curr[n] ? n + 1 : 0;
+        for (int j = 0; j < 4; j++) {
+            test->inputs[j][i] = curr[j];
+        }
+    }
+    for (int i = 0; i < 4; i++) {
+        test->input_sizes[i] = 39;
+    }
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
 int gen_signal_pattern_detector(uint32_t seed, test_case_buffer *test) {
     unity_rng rng = create_unity_rng(seed);
     for (int i = 0; i < 39; i++) {
@@ -166,6 +213,44 @@ int gen_signal_pattern_detector(uint32_t seed, test_case_buffer *test) {
     }
     test->input_sizes[0] = 39;
     test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_sequence_peak_detector(uint32_t seed, test_case_buffer *test) {
+    // Due to the weird way the game does to prevent the last sequence to be empty,
+    // sequence generation in this puzzle is harder to optimize than others.
+    unity_rng rng = create_unity_rng(seed);
+    int oi = 0;
+    while (oi < 39) {
+        char len = unity_rng_next_between(&rng, 3, 6);
+        for (int i = 0; i < len; i++) {
+            test->inputs[0][MIN(oi + i, 37)] = unity_rng_next_between(&rng, 10, 100);
+        }
+        test->inputs[0][MIN(oi + len, 38)] = 0;
+        oi += len + 1;
+    }
+    test->inputs[0][37] = unity_rng_next_between(&rng, 10, 100);
+
+    int16_t seqs = 0;
+    int16_t min = 100;
+    int16_t max = 0;
+    // Having to detect terminating zero has a high branch misprediction rate. I've been always trying to avoid this,
+    // but it is hard to avoid here. I hope there is a better way.
+    for (int i = 0; i < 39; i++) {
+        if (test->inputs[0][i]) {
+            min = MIN(min, test->inputs[0][i]);
+            max = MAX(max, test->inputs[0][i]);
+        } else {
+            test->outputs[0][seqs] = min;
+            test->outputs[1][seqs] = max;
+            seqs++;
+            min = 100;
+            max = 0;
+        }
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = seqs;
+    test->output_sizes[1] = seqs;
     return 0;
 }
 
@@ -216,6 +301,56 @@ int gen_image_test_pattern_2(uint32_t seed, test_case_buffer *test) {
             test->image[x + y * 30] = (x ^ y) % 2 == 0 ? 3 : 0;
         }
     }
+    return 0;
+}
+
+int gen_exposure_mask_viewer(uint32_t seed, test_case_buffer *test) {
+    unity_rng rng = create_unity_rng(seed);
+    memset(test->image, 0, 540);
+    // Stores an extra copy of the image but in bits, each row into one 32 bit integer.
+    // Used for fast rectangle ovelap detection.
+    uint32_t bit_image[18] = {0};
+    int retries = 0;
+    for (int i = 0; i < 9; i++) {
+        int w, h, x, y;
+        retry_exposure_mask:
+        w = unity_rng_next_between(&rng, 3, 6);
+        h = unity_rng_next_between(&rng, 3, 6);
+        x = unity_rng_next_between(&rng, 1, 29 - w);
+        y = unity_rng_next_between(&rng, 1, 17 - h);
+        uint32_t row_coll = (1 << (x + w + 1)) - (1 << (x - 1));
+        for (int j = -1; j < h + 1; j++) {
+            if (row_coll & bit_image[y + j]) {
+                // The test tries to put 9 rectangles, but it is possible that at a point the remaining
+                // rectangles cannot fit into the remaining space.
+                // This currently uses the same strategy as TIS-100-CXX, which skips the whole test case
+                // when too many retries happen.
+                // If I can efficiently detect whether a rectangle can be placed or not, I will replace this strategy.
+                retries++;
+                if (retries > 250) {
+                    return 1;
+                }
+                goto retry_exposure_mask;
+            }
+        }
+        uint32_t row = (1 << (x + w)) - (1 << x);
+        for (int j = 0; j < h; j++) {
+            bit_image[y + j] |= row;
+        }
+
+        int off = x + y * 30;
+        for (int j = 0; j < h; j++) {
+            for (int k = 0; k < w; k++) {
+                test->image[off + k] = 3;
+            }
+            off += 30;
+        }
+        test->inputs[0][i * 4] = x;
+        test->inputs[0][i * 4 + 1] = y;
+        test->inputs[0][i * 4 + 2] = w;
+        test->inputs[0][i * 4 + 3] = h;
+    }
+    test->input_sizes[0] = 36;
     return 0;
 }
 
@@ -468,6 +603,74 @@ int gen_sequence_range_limiter(uint32_t seed, test_case_buffer *test) {
     test->input_sizes[1] = 36;
     test->input_sizes[2] = 6;
     test->output_sizes[0] = 36;
+    return 0;
+}
+
+int gen_signal_error_corrector(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        int p = mono_rng_next_between(&rng, 0, 4);
+        int16_t a = mono_rng_next_between(&rng, 10, 100);
+        int16_t b = mono_rng_next_between(&rng, 10, 100);
+        switch (p) {
+            case 0:
+                test->inputs[0][i] = -1;
+                test->inputs[1][i] = b;
+                test->outputs[0][i] = b;
+                test->outputs[1][i] = b;
+                break;
+            case 1:
+                test->inputs[0][i] = a;
+                test->inputs[1][i] = -1;
+                test->outputs[0][i] = a;
+                test->outputs[1][i] = a;
+                break;
+            default:
+                test->inputs[0][i] = a;
+                test->inputs[1][i] = b;
+                test->outputs[0][i] = a;
+                test->outputs[1][i] = b;
+                break;
+        }
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
+    test->output_sizes[1] = 39;
+    return 0;
+}
+
+int gen_subsequence_extractor(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    char lens[] = {2, 3, 3, 4, 4, 4, 5, 6};
+    for (int i = 7; i >= 1; i--) {
+        int j = mono_rng_next_between(&rng, 0, i + 1);
+        char temp = lens[i];
+        lens[i] = lens[j];
+        lens[j] = temp;
+    }
+    int ii = 0, oi = 0;
+    for (int i = 0; i < 8; i++) {
+        const char len = lens[i];
+        for (int j = 0; j < len; j++) {
+            test->inputs[1][ii + j] = mono_rng_next_between(&rng, 10, 100);
+        }
+        test->inputs[1][ii + len] = 0;
+        const char sublen = len == 2 ? 2 : mono_rng_next_between(&rng, 2, len + 1);
+        const char begin = sublen == len ? 0 : mono_rng_next_between(&rng, 0, len + 1 - sublen);
+        const char end = begin + sublen - 1;
+        test->inputs[0][i * 2] = begin;
+        test->inputs[0][i * 2 + 1] = end;
+        for (int j = 0; j < sublen; j++) {
+            test->outputs[0][oi + j] = test->inputs[1][ii + begin + j];
+        }
+        test->outputs[0][oi + sublen] = 0;
+        ii += len + 1;
+        oi += sublen + 1;
+    }
+    test->input_sizes[0] = 16;
+    test->input_sizes[1] = 39;
+    test->output_sizes[0] = oi;
     return 0;
 }
 

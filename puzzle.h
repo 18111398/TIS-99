@@ -31,11 +31,15 @@ int gen_signal_comparator(uint32_t seed, test_case_buffer *test);
 int gen_signal_multiplexer(uint32_t seed, test_case_buffer *test);
 int gen_sequence_generator(uint32_t seed, test_case_buffer *test);
 int gen_sequence_counter(uint32_t seed, test_case_buffer *test);
+int gen_signal_edge_detector(uint32_t seed, test_case_buffer *test);
+int gen_interrupt_handler(uint32_t seed, test_case_buffer *test);
 int gen_signal_pattern_detector(uint32_t seed, test_case_buffer *test);
+int gen_sequence_peak_detector(uint32_t seed, test_case_buffer *test);
 int gen_sequence_reverser(uint32_t seed, test_case_buffer *test);
 int gen_signal_multiplier(uint32_t seed, test_case_buffer *test);
 int gen_image_test_pattern_1(uint32_t seed, test_case_buffer *test);
 int gen_image_test_pattern_2(uint32_t seed, test_case_buffer *test);
+int gen_exposure_mask_viewer(uint32_t seed, test_case_buffer *test);
 int gen_histogram_viewer(uint32_t seed, test_case_buffer *test);
 int gen_signal_window_filter(uint32_t seed, test_case_buffer *test);
 int gen_signal_divider(uint32_t seed, test_case_buffer *test);
@@ -45,6 +49,8 @@ int gen_stored_image_decoder(uint32_t seed, test_case_buffer *test);
 int gen_sequence_merger(uint32_t seed, test_case_buffer *test);
 int gen_integer_series_calculator(uint32_t seed, test_case_buffer *test);
 int gen_sequence_range_limiter(uint32_t seed, test_case_buffer *test);
+int gen_signal_error_corrector(uint32_t seed, test_case_buffer *test);
+int gen_subsequence_extractor(uint32_t seed, test_case_buffer *test);
 int gen_signal_prescaler(uint32_t seed, test_case_buffer *test);
 int gen_signal_averager(uint32_t seed, test_case_buffer *test);
 int gen_submaximum_selector(uint32_t seed, test_case_buffer *test);
@@ -146,6 +152,28 @@ static const puzzle all_puzzles[] = {
         },
         gen_sequence_counter
     }, {
+        "32050", "SIGNAL EDGE DETECTOR", 7,
+        1, {1},
+        1, {2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            XXX, T21, T21, T21,
+        },
+        gen_signal_edge_detector
+    }, {
+        "33762", "INTERRUPT HANDLER", 19,
+        4, {0, 1, 2, 3},
+        1, {2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            XXX, T21, T21, T21,
+        },
+        gen_interrupt_handler
+    }, {
         "40196", "SIGNAL PATTERN DETECTOR", 888,
         1, {1},
         1, {2},
@@ -156,6 +184,17 @@ static const puzzle all_puzzles[] = {
             T21, T21, T21, T21,
         },
         gen_signal_pattern_detector
+    }, {
+        "41427", "SEQUENCE PEAK DETECTOR", 18,
+        1, {1},
+        2, {1, 2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, XXX,
+            T21, T21, T21, T21,
+        },
+        gen_sequence_peak_detector
     }, {
         "42656", "SEQUENCE REVERSER", 10,
         1, {1},
@@ -200,6 +239,17 @@ static const puzzle all_puzzles[] = {
             T21, T21, T21, T21,
         },
         gen_image_test_pattern_2
+    }, {
+        "52544", "EXPOSURE MASK VIEWER", 60,
+        1, {1},
+        0, {},
+        2,
+        {
+            T21, T21, T21, XXX,
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+        },
+        gen_exposure_mask_viewer
     }, {"53897", "HISTOGRAM VIEWER", 15,
         1, {1},
         0, {},
@@ -297,6 +347,28 @@ static const puzzle all_puzzles[] = {
             T21, T21, T21, T21,
         },
         gen_sequence_range_limiter
+    }, {
+        "NEXUS.03.176.9", "SIGNAL ERROR CORRECTOR", 3 * 23,
+        2, {1, 2},
+        2, {1, 2},
+        -1,
+        {
+            XXX, T21, T21, XXX,
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+        },
+        gen_signal_error_corrector
+    }, {
+        "NEXUS.04.340.5", "SUBSEQUENCE EXTRACTOR", 4 * 23,
+        2, {1, 2},
+        1, {2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            XXX, T21, T21, T21,
+        },
+        gen_subsequence_extractor
     }, {
         "NEXUS.05.647.1", "SIGNAL PRESCALER", 5 * 23,
         1, {0},
