@@ -47,14 +47,20 @@ int gen_integer_series_calculator(uint32_t seed, test_case_buffer *test);
 int gen_sequence_range_limiter(uint32_t seed, test_case_buffer *test);
 int gen_signal_prescaler(uint32_t seed, test_case_buffer *test);
 int gen_signal_averager(uint32_t seed, test_case_buffer *test);
+int gen_submaximum_selector(uint32_t seed, test_case_buffer *test);
 int gen_decimal_decomposer(uint32_t seed, test_case_buffer *test);
+int gen_sequence_mode_calculator(uint32_t seed, test_case_buffer *test);
 int gen_sequence_normalizer(uint32_t seed, test_case_buffer *test);
 int gen_image_test_pattern_3(uint32_t seed, test_case_buffer *test);
 int gen_image_test_pattern_4(uint32_t seed, test_case_buffer *test);
+int gen_spatial_path_viewer(uint32_t seed, test_case_buffer *test);
+int gen_character_terminal(uint32_t seed, test_case_buffer *test);
 int gen_backreference_reifier(uint32_t seed, test_case_buffer *test);
+int gen_dynamic_pattern_detector(uint32_t seed, test_case_buffer *test);
 int gen_sequence_gap_interpolator(uint32_t seed, test_case_buffer *test);
 int gen_decimal_to_octal_converter(uint32_t seed, test_case_buffer *test);
 int gen_prolonged_sequence_sorter(uint32_t seed, test_case_buffer *test);
+int gen_prime_factor_calculator(uint32_t seed, test_case_buffer *test);
 int gen_signal_exponentiator(uint32_t seed, test_case_buffer *test);
 int gen_t20_node_emulator(uint32_t seed, test_case_buffer *test);
 int gen_t31_node_emulator(uint32_t seed, test_case_buffer *test);
@@ -313,6 +319,17 @@ static const puzzle all_puzzles[] = {
         },
         gen_signal_averager
     }, {
+        "NEXUS.07.050.0", "SUBMAXIMUM SELECTOR", 7 * 23,
+        4, {0, 1, 2, 3},
+        1, {2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            XXX, T21, T21, T21,
+        },
+        gen_submaximum_selector
+    }, {
         "NEXUS.08.633.9", "DECIMAL DECOMPOSER", 8 * 23,
         1, {1},
         3, {0, 1, 2},
@@ -323,6 +340,17 @@ static const puzzle all_puzzles[] = {
             T21, T21, T21, T21,
         },
         gen_decimal_decomposer
+    }, {
+        "NEXUS.09.904.9", "SEQUENCE MODE CALCULATOR", 9 * 23,
+        1, {1},
+        1, {1},
+        -1,
+        {
+            T30, T21, T30, XXX,
+            T21, T21, T21, XXX,
+            T21, T21, T21, XXX,
+        },
+        gen_sequence_mode_calculator
     }, {
         "NEXUS.10.656.5", "SEQUENCE NORMALIZER", 10 * 23,
         1, {1},
@@ -357,6 +385,28 @@ static const puzzle all_puzzles[] = {
         },
         gen_image_test_pattern_4
     }, {
+        "NEXUS.13.370.9", "SPATIAL PATH VIEWER", 13 * 23,
+        1, {1},
+        0, {},
+        2,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            XXX, T21, T21, T21,
+        },
+        gen_spatial_path_viewer
+    }, {
+        "NEXUS.14.781.3", "CHARACTER TERMINAL", 14 * 23,
+        1, {1},
+        0, {},
+        2,
+        {
+            T30, T21, T21, XXX,
+            T21, T21, T21, T21,
+            T30, T21, T21, T21,
+        },
+        gen_character_terminal
+    }, {
         "NEXUS.15.897.9", "BACK-REFERENCE REIFIER", 15 * 23,
         2, {1, 2},
         1, {2},
@@ -367,6 +417,17 @@ static const puzzle all_puzzles[] = {
             XXX, T21, T21, T21,
         },
         gen_backreference_reifier
+    }, {
+        "NEXUS.16.212.8", "DYNAMIC PATTERN DETECTOR", 16 * 23,
+        2, {2, 0},
+        1, {2},
+        -1,
+        {
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+            T21, T21, T21, XXX,
+        },
+        gen_dynamic_pattern_detector
     }, {
         "NEXUS.17.135.0", "SEQUENCE GAP INTERPOLATOR", 17 * 23,
         1, {2},
@@ -400,6 +461,17 @@ static const puzzle all_puzzles[] = {
             T21, T30, T21, T21,
         },
         gen_prolonged_sequence_sorter
+    }, {
+        "NEXUS.20.433.1", "PRIME FACTOR CALCULATOR", 20 * 23,
+        1, {1},
+        1, {1},
+        -1,
+        {
+            T21, T21, T21, XXX,
+            T21, T21, T21, T21,
+            T21, T21, T21, T21,
+        },
+        gen_prime_factor_calculator
     }, {
         "NEXUS.21.601.6", "SIGNAL EXPONENTIATOR", 21 * 23,
         2, {1, 2},

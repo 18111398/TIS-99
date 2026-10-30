@@ -1,6 +1,7 @@
 #include "puzzle.h"
 #include "random.h"
 #include <stdint.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
@@ -499,6 +500,25 @@ int gen_signal_averager(uint32_t seed, test_case_buffer *test) {
     return 0;
 }
 
+int gen_submaximum_selector(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 39; i++) {
+        test->inputs[0][i] = mono_rng_next_between(&rng, 0, 100);
+        test->inputs[1][i] = mono_rng_next_between(&rng, 0, 100);
+        test->inputs[2][i] = mono_rng_next_between(&rng, 0, 100);
+        test->inputs[3][i] = mono_rng_next_between(&rng, 0, 100);
+        int16_t submax1 = MIN(MAX(test->inputs[0][i], test->inputs[1][i]), MAX(test->inputs[2][i], test->inputs[3][i]));
+        int16_t submax2 = MAX(MIN(test->inputs[0][i], test->inputs[1][i]), MIN(test->inputs[2][i], test->inputs[3][i]));
+        test->outputs[0][i] = MAX(submax1, submax2);
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 39;
+    test->input_sizes[2] = 39;
+    test->input_sizes[3] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
 int gen_decimal_decomposer(uint32_t seed, test_case_buffer *test) {
     mono_rng rng = create_mono_rng(seed);
     for (int i = 0; i < 39; i++) {
@@ -518,6 +538,50 @@ int gen_decimal_decomposer(uint32_t seed, test_case_buffer *test) {
     test->output_sizes[0] = 39;
     test->output_sizes[1] = 39;
     test->output_sizes[2] = 39;
+    return 0;
+}
+
+int gen_sequence_mode_calculator(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    int seqs = 0;
+    char lens[10] = {0};
+    int prev_end = -1;
+    for (int i = 0; i < 38; i++) {
+        test->inputs[0][i] = mono_rng_next_between(&rng, 1, 6);
+        if (i - prev_end > 3 && mono_rng_next(&rng) < 0.5 && i < 37) {
+            test->inputs[0][i] = 0;
+            lens[seqs] = i - prev_end;
+            seqs++;
+            prev_end = i;
+        }
+    }
+    test->inputs[0][38] = 0;
+    lens[seqs] = 38 - prev_end;
+    seqs++;
+
+    char begin = 0;
+    for (int seq = 0; seq < seqs; seq++) {
+        char len = lens[seq];
+        char counts[6] = {0};
+        for (int i = begin; i < begin + len - 1; i++) {
+            counts[test->inputs[0][i]]++;
+        }
+        int16_t ret = 0;
+        char mode = 0;
+        for (int i = 1; i <= 5; i++) {
+            if (counts[i] > mode) {
+                mode = counts[i];
+                ret = i;
+            } else if (counts[i] == mode) {
+                ret = 0;
+            }
+        }
+        test->outputs[0][seq] = ret;
+
+        begin += len;
+    }
+    test->input_sizes[0] = 39;
+    test->output_sizes[0] = seqs;
     return 0;
 }
 
@@ -563,6 +627,118 @@ int gen_image_test_pattern_4(uint32_t seed, test_case_buffer *test) {
     return 0;
 }
 
+void random_spatial_path_coords(mono_rng *rng, char upper, char *res) {
+    char remaining[30];
+    for (int i = 1; i < upper; i++) {
+        remaining[i] = i;
+    }
+    for (int i = upper - 1; i >= 2; i--) {
+        int j = mono_rng_next_between(rng, 1, i + 1);
+        char temp = remaining[i];
+        remaining[i] = remaining[j];
+        remaining[j] = temp;
+    }
+    char prev = 0;
+    res[0] = 0;
+    for (int i = 1; i < 11; i++) {
+        char coord = remaining[i];
+        for (int j = i + 1; 1; j++) {
+            char d = abs(coord - prev);
+            if (d >= 3 && d <= 14) {
+                break;
+            }
+            char temp = coord;
+            coord = remaining[j];
+            remaining[j] = temp;
+        }
+        res[i] = coord;
+        prev = coord;
+    }
+}
+/*
+ * I wrote this very bad. If possible, clean up
+ */
+int gen_spatial_path_viewer(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    memset(test->image, 0, 540);
+    char x[11], y[11];
+    random_spatial_path_coords(&rng, 30, x);
+    random_spatial_path_coords(&rng, 18, y);
+    int pos = 0;
+    int ii = 0;
+    for (int i = 0; 1; i++) {
+        if (x[i] < x[i+1]) {
+            test->inputs[0][ii++] = 0;
+            test->inputs[0][ii++] = x[i+1] - x[i] + 1;
+            for (int j = x[i]; j < x[i+1]; j++) {
+                test->image[pos] = 3;
+                pos++;
+            }
+        } else {
+            test->inputs[0][ii++] = 180;
+            test->inputs[0][ii++] = x[i] - x[i+1] + 1;
+            for (int j = x[i]; j > x[i+1]; j--) {
+                test->image[pos] = 3;
+                pos--;
+            }
+        }
+        if (i == 9) {
+            test->image[pos] = 3;
+            break;
+        }
+        if (y[i] < y[i+1]) {
+            test->inputs[0][ii++] = 270;
+            test->inputs[0][ii++] = y[i+1] - y[i] + 1;
+            for (int j = y[i]; j < y[i+1]; j++) {
+                test->image[pos] = 3;
+                pos += 30;
+            }
+        } else {
+            test->inputs[0][ii++] = 90;
+            test->inputs[0][ii++] = y[i] - y[i+1] + 1;
+            for (int j = y[i]; j > y[i+1]; j--) {
+                test->image[pos] = 3;
+                pos -= 30;
+            }
+        }
+    }
+    test->input_sizes[0] = 38;
+    return 0;
+}
+
+int gen_character_terminal(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    memset(test->image, 0, 540);
+    char line_ends[4] = {-1, 0, 0, 38};
+    mono_rng_next(&rng);
+    for (int i = 0; i < 38; i++) {
+        test->inputs[0][i] = mono_rng_next_between(&rng, 1, 5);
+    }
+    test->inputs[0][38] = 0;
+    line_ends[1] = mono_rng_next_between(&rng, 11, 16);
+    line_ends[2] = mono_rng_next_between(&rng, 27, 31);
+    test->inputs[0][line_ends[1]] = 0;
+    test->inputs[0][line_ends[2]] = 0;
+    static const char bitmaps[5] = {0b0000, 0b0101, 0b1001, 0b0110, 0b0111};
+    static const char bit_offsets[4] = {0, 1, 30, 31};
+    for (int line = 0; line < 3; line++) {
+        int offset = line * 180;
+        int col = 0; // only used for detecting line wrap
+        for (int i = line_ends[line] + 1; i < line_ends[line + 1]; i++) {
+            char bitmap = bitmaps[test->inputs[0][i]];
+            for (int i = 0; i < 4; i++) {
+                int pixel_offset = offset + bit_offsets[i];
+                test->image[pixel_offset] = bitmap & 1 << i ? 3 : 0;
+            }
+            offset += 3;
+            col++;
+            if (col == 10) offset += 60;
+        }
+    }
+    test->input_sizes[0] = 39;
+    return 0;
+}
+
 int gen_backreference_reifier(uint32_t seed, test_case_buffer *test) {
     mono_rng rng = create_mono_rng(seed);
     for (int i = 0; i < 39; i++) {
@@ -579,6 +755,67 @@ int gen_backreference_reifier(uint32_t seed, test_case_buffer *test) {
     }
     test->input_sizes[0] = 39;
     test->input_sizes[1] = 39;
+    test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_dynamic_pattern_detector(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    for (int i = 0; i < 12; i++) {
+        mono_rng_next(&rng);
+    }
+    for (int i = 0; i < 3; i++) {
+        test->inputs[1][i] = mono_rng_next_between(&rng, 1, 43);
+    }
+    test->inputs[1][3] = 0;
+    for (int i = 0; i < 39; i++) {
+        test->inputs[0][i] = mono_rng_next_between(&rng, 1, 43);
+    }
+    for (int k = 0; k < 2; k++) {
+        int j = mono_rng_next_between(&rng, 0, 37);
+        test->inputs[0][j] = test->inputs[1][0];
+        test->inputs[0][j + 1] = test->inputs[1][1];
+        test->inputs[0][j + 2] = test->inputs[1][2];
+    }
+    for (int k = 0; k < 3; k++) {
+        int j = mono_rng_next_between(&rng, 0, 37);
+        test->inputs[0][j + 1] = test->inputs[1][1];
+        test->inputs[0][j + 2] = test->inputs[1][2];
+    }
+    int j = mono_rng_next_between(&rng, 0, 7);
+    test->inputs[0][j] = test->inputs[1][0];
+    test->inputs[0][j + 1] = test->inputs[1][1];
+    test->inputs[0][j + 2] = test->inputs[1][2];
+
+    j = mono_rng_next_between(&rng, 9, 13);
+    test->inputs[0][j] = test->inputs[1][0];
+    test->inputs[0][j + 1] = test->inputs[1][1];
+    test->inputs[0][j + 2] = test->inputs[1][1];
+    test->inputs[0][j + 3] = test->inputs[1][2];
+
+    j = mono_rng_next_between(&rng, 16, 23);
+    test->inputs[0][j] = test->inputs[1][0];
+    test->inputs[0][j + 1] = test->inputs[1][0];
+    test->inputs[0][j + 2] = test->inputs[1][1];
+    test->inputs[0][j + 3] = test->inputs[1][2];
+
+    j = mono_rng_next_between(&rng, 26, 35);
+    test->inputs[0][j] = test->inputs[1][0];
+    test->inputs[0][j + 1] = test->inputs[1][1];
+    test->inputs[0][j + 2] = test->inputs[1][0];
+    test->inputs[0][j + 3] = test->inputs[1][1];
+    test->inputs[0][j + 4] = test->inputs[1][2];
+
+    test->outputs[0][0] = 0;
+    test->outputs[0][1] = 0;
+    for (int i = 2; i < 39; i++) {
+        test->outputs[0][i] =
+            test->inputs[0][i - 2] == test->inputs[1][0] &&
+            test->inputs[0][i - 1] == test->inputs[1][1] &&
+            test->inputs[0][i - 0] == test->inputs[1][2];
+    }
+    test->input_sizes[0] = 39;
+    test->input_sizes[1] = 4;
     test->output_sizes[0] = 39;
     return 0;
 }
@@ -648,6 +885,46 @@ int gen_prolonged_sequence_sorter(uint32_t seed, test_case_buffer *test) {
     test->outputs[0][38] = -1;
     test->input_sizes[0] = 39;
     test->output_sizes[0] = 39;
+    return 0;
+}
+
+int gen_prime_factor_calculator(uint32_t seed, test_case_buffer *test) {
+    mono_rng rng = create_mono_rng(seed);
+    // These represent the lengths of the whole prime factor sequence including the terminating zero.
+    // Thus prime numbers have a length of 2.
+    // This list is script-generated.
+    char lens[90] = {3, 2, 4, 2, 3, 3, 5, 2, 4, 2, 4, 3, 3, 2, 5, 3, 3, 4, 4, 2, 4, 2, 6, 3, 3, 3, 5, 2, 3, 3, 5, 2, 4, 2, 4, 4, 3, 2, 6, 3, 4, 3, 4, 2, 5, 3, 5, 3, 3, 2, 5, 2, 3, 4, 7, 3, 4, 2, 4, 3, 4, 2, 6, 2, 3, 4, 4, 3, 4, 2, 6, 5, 3, 2, 5, 3, 3, 3, 5, 2, 5, 3, 4, 3, 3, 3, 7, 2, 4, 4};
+    int total;
+    do {
+        total = 38;
+        for (int i = 0; i < 10; i++) {
+            int n = mono_rng_next_between(&rng, 10, 100);
+            test->inputs[0][i] = n;
+            total -= lens[n - 10];
+        }
+    } while (total != 0);
+
+    const char small_primes[4] = {2, 3, 5, 7};
+    int oi = 0;
+    for (int i = 0; i < 10; i++) {
+        int n = test->inputs[0][i];
+        char len = lens[n - 10];
+        char prime_i = 0;
+        // I still compute the primes on the fly, but with the length known the termination detection is much simpler.
+        for (int j = 0; j < len - 2; j++) {
+            while (n % small_primes[prime_i] != 0) {
+                prime_i++;
+            }
+            n /= small_primes[prime_i];
+            test->outputs[0][oi + j] = small_primes[prime_i];
+        }
+        test->outputs[0][oi + len - 2] = n;
+        test->outputs[0][oi + len - 1] = 0;
+        oi += len;
+    }
+
+    test->input_sizes[0] = 10;
+    test->output_sizes[0] = 38;
     return 0;
 }
 

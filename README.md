@@ -18,10 +18,10 @@ OOOOO
 ##### Bonus
 ```
 OOO..
-OO.O.
-OOO..
-O.OOO
-.OOOO
+OOOOO
+OOOOO
+OOOOO
+OOOOO
 ```
 
 ##### Secret
