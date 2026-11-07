@@ -498,20 +498,17 @@ int gen_sequence_merger(uint32_t seed, test_case_buffer *test) {
     char prev_has_empty = 1;
     char can_be_zero = 1;
     while (i < 39) {
-        int sup_len =
-            i == 26 ? 11 :
-            i < 28  ? 12 :
-                      38 - i;
-        // I made a confusion here.
-        // sup_len is the exact length when i >= 28, but the max len + 1 when i < 28.
-        // I hope I can improve to make this more readable.
-        int len = sup_len;
-        if (sup_len >= 11) {
+        int len;
+        if (i >= 28) {
+            len = 38 - i;
+        } else {
+            int sup_len = i == 26 ? 11 : 12;
             do {
                 len = mono_rng_next_between(&rng, 0, sup_len);
             } while (len == 0 && can_be_zero == 0);
+            if (len == 0) { can_be_zero = 0; }
         }
-        if (len == 0) { can_be_zero = 0; }
+
         int len1 = (prev_has_empty && len >= 2) ? mono_rng_next_between(&rng, 1, len) : mono_rng_next_between(&rng, 0, len + 1);
         int len2 = len - len1;
 
