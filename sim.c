@@ -127,15 +127,13 @@ sim_report run(sim_state *sim, int cycle_limit) {
                     switch (op) {
                         case ADD:
                             t21->acc += src_value;
-                            if (t21->acc > 999) {
-                                t21->acc = 999;
-                            }
+                            if (t21->acc > 999) { t21->acc = 999; }
+                            if (t21->acc < -999) { t21->acc = -999; }
                             break;
                         case SUB:
                             t21->acc -= src_value;
-                            if (t21->acc < -999) {
-                                t21->acc = -999;
-                            }
+                            if (t21->acc > 999) { t21->acc = 999; }
+                            if (t21->acc < -999) { t21->acc = -999; }
                             break;
                         case MOV:
                             get_dst_arg:
