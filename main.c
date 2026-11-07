@@ -10,7 +10,7 @@ int main(int argc, char *argv[]) {
         puts("Provide a file");
         return 0;
     }
-    FILE *fp = fopen(argv[1], "r");
+    FILE *fp = fopen(argv[1], "rb");
     if (fp == NULL) {
         puts("ERROR: Failed to open file");
         return -1;
